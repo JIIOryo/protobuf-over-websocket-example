@@ -1,6 +1,6 @@
 import 'reflect-metadata'
 
-import {server} from '.'
+import {server} from '@server'
 
 const main = async () => {
   await server.setup()

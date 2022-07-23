@@ -1,9 +1,9 @@
 import {Container} from 'inversify'
 
-import {Config} from '../types'
+import {Config} from '@server/types'
 import * as Identifier from './identifier'
-import * as config from '../config'
-import * as server from '../server'
+import * as config from '@server/config'
+import * as server from '@server/server'
 
 const rootContainer = new Container()
 

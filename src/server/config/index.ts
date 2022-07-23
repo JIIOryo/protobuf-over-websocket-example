@@ -1,6 +1,6 @@
-import {Config} from '../types'
+import {Config} from '@server/types'
 
-import {config as commonConfig} from '../../common'
+import {config as commonConfig} from '@common'
 
 export const config: Config = {
   server: {

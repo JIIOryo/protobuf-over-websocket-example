@@ -1,8 +1,9 @@
 import * as ws from 'ws'
 import {inject, injectable} from 'inversify'
 
-import * as Identifier from '../../di/identifier'
-import {Config} from '../../types'
+import * as Identifier from '@server/di/identifier'
+import {Config} from '@server/types'
+
 import { IServer } from '../interface'
 
 @injectable()

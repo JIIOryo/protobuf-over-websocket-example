@@ -17,6 +17,12 @@
     "types": [
       "node",
     ],
+    "paths": {
+      "@common": ["./common"],
+      "@common/*": ["./common/*"],
+      "@server": ["./server"],
+      "@server/*": ["./server/*"],
+    }
   },
   "include": [
     "./src/**/*",
