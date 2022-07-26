@@ -8,9 +8,9 @@ import {util} from '@common'
 
 const generatePrompt = (userId: Chat.UserId, roomId?: Chat.RoomId): string => {
   if (roomId) {
-    return `${userId}@${roomId}> `
+    return `${userId}@${roomId} > `
   } else {
-    return `${userId}> `
+    return `${userId} > `
   }
 }
 
@@ -61,8 +61,12 @@ client.on('message', (message) => {
       rl.setPrompt(generatePrompt(userId))
       break
     }
+    case 'Room.Message': {
+      console.log(`\n${data.data.userId}: ${data.data.message}`)
+      break
+    }
     default: {
-      console.warn('unknown command from server')
+      console.warn(`unknown command from server ${data.commandName}`)
       break
     }
   }
@@ -139,10 +143,27 @@ rl.on('line', (line) => {
       return
     }
     default: {
-      console.log('unknown command')
-      break
+
+      // Roomにjoinしていない場合は何もしない
+      if (!joinedRoomId) {
+        console.log('you are not in any room')
+        rl.prompt()
+        return
+      }
+
+      // messageを送信
+      const request: Schema.Request<Schema.Room.MessageReq> = {
+        commandName: 'Room.Message',
+        data: {
+          userId,
+          roomId: joinedRoomId,
+          message: line,
+        }
+      }
+
+      client.send(JSON.stringify(request))
+
+      return
     }
   }
-
-  rl.prompt()
 })

@@ -59,10 +59,18 @@ export class RoomController implements IRoomController {
   }
 
   async message(req: Schema.Room.MessageReq, chatUser: ChatUser, res: IResponse<Schema.Room.MessageRes>): Promise<void> {
-    res.broadcast({
-      roomId: 'room-Id',
-      userId: 'user-Id',
-      message: 'message',
+    const roomId = req.roomId
+    const room = roomMap.get(roomId)
+
+    if (!room) {
+      console.error(`Room not found: ${roomId}`)
+    }
+
+    // Room内のユーザーにメッセージを送信する
+    await res.broadcast('Room.Message', {
+      roomId,
+      userId: chatUser.id,
+      message: req.message,
     })
   }
 }

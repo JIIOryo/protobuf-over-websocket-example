@@ -29,10 +29,14 @@ export class WebSocketResponse<Res extends object = object> implements IResponse
     })
   }
 
-  async broadcast(data: Res): Promise<void> {
+  async broadcast(commandName: string, data: Res): Promise<void> {
+    const res: Schema.Response = {
+      commandName,
+      data,
+    }
     await Promise.all(
       Object.entries(this._room.users).map(async ([userId, chatUser]) => {
-        await chatUser.send(JSON.stringify(data))
+        await chatUser.send(JSON.stringify(res))
       })
     )
   }
