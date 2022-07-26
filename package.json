@@ -6,7 +6,8 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json && npx tsc-alias -p tsconfig.json",
     "watch": "rm -rf dist && tsc -p tsconfig.json -w & npx tsc-alias -w -p tsconfig.json",
-    "server": "node dist/server/main.js"
+    "server": "node dist/server/main.js",
+    "client": "node dist/client/index.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,7 @@
   },
   "homepage": "https://github.com/JIIOryo/protobuf-over-websocket-example#readme",
   "devDependencies": {
+    "@types/lodash": "^4.14.182",
     "@types/ws": "^8.5.3",
     "ts-node": "^10.9.1",
     "tsc-alias": "^1.7.0",
@@ -27,6 +29,7 @@
   },
   "dependencies": {
     "inversify": "^6.0.1",
+    "lodash": "^4.17.21",
     "reflect-metadata": "^0.1.13",
     "ws": "^8.8.1"
   }
