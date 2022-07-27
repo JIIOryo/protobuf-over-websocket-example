@@ -1,5 +1,6 @@
 import { injectable } from 'inversify'
 
+import {logger} from '@common'
 import {Schema} from '@common/types'
 
 import { roomMap } from '@server'
@@ -17,10 +18,11 @@ export class RoomController implements IRoomController {
     const room = roomMap.get(roomId)
 
     if (!room) {
-      console.error(`Room not found: ${roomId}`)
+      logger.error(`Room not found: ${roomId}`)
       // TODO: Errorメッセージを返す
       await res.reply('Room.Join', {
         roomId,
+        userId: chatUser.id,
         success: false,
       })
       return
@@ -29,8 +31,9 @@ export class RoomController implements IRoomController {
     // Roomに参加する
     room.join(chatUser)
     
-    await res.reply('Room.Join', {
+    await res.broadcast('Room.Join', {
       roomId,
+      userId: chatUser.id,
       success: true,
     })
   }
@@ -40,10 +43,11 @@ export class RoomController implements IRoomController {
     const room = roomMap.get(roomId)
 
     if (!room) {
-      console.error(`Room not found: ${roomId}`)
+      logger.error(`Room not found: ${roomId}`)
       // TODO: Errorメッセージを返す
       await res.reply('Room.Leave', {
         roomId,
+        userId: chatUser.id,
         success: false,
       })
       return
@@ -52,8 +56,15 @@ export class RoomController implements IRoomController {
     // Roomから退出する
     room.leave(chatUser.id)
 
+    await res.broadcast('Room.Leave', {
+      roomId,
+      userId: chatUser.id,
+      success: true,
+    })
+    // leaveした人に対してはbroadcastでは届かないのでreplyで送信する
     await res.reply('Room.Leave', {
       roomId,
+      userId: chatUser.id,
       success: true,
     })
   }
@@ -63,7 +74,7 @@ export class RoomController implements IRoomController {
     const room = roomMap.get(roomId)
 
     if (!room) {
-      console.error(`Room not found: ${roomId}`)
+      logger.error(`Room not found: ${roomId}`)
     }
 
     // Room内のユーザーにメッセージを送信する

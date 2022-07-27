@@ -6,6 +6,7 @@ export type JoinReq = {
 }
 export type JoinRes = {
   roomId: Chat.RoomId
+  userId: Chat.UserId
   success: boolean
 }
 
@@ -15,6 +16,7 @@ export type LeaveReq = {
 }
 export type LeaveRes = {
   roomId: Chat.RoomId
+  userId: Chat.UserId
   success: boolean
 }
 

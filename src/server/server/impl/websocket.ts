@@ -2,7 +2,7 @@ import * as ws from 'ws'
 import {inject, injectable} from 'inversify'
 
 import {Config, Chat} from '@common/types'
-import { util } from '@common'
+import { util, logger } from '@common'
 
 import * as Identifier from '@server/di/identifier'
 import {websocketHandler} from '@server/handler'
@@ -23,13 +23,13 @@ export class WebSocketServer implements IServer {
   
   public setup(): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('[WebSocketServer] setup')
+      logger.info('[WebSocketServer] setup')
       resolve()
     })
   }
 
   public start(): Promise<void> {
-    console.log(`[WebSocketServer] start listening on port: ${this.port}`)
+    logger.info(`[WebSocketServer] start listening on port: ${this.port}`)
     return new Promise((resolve, reject) => {
       this.wss.on('connection', (socket, req) => {
         /**
@@ -38,7 +38,7 @@ export class WebSocketServer implements IServer {
         const url = req.url
 
         if (!url) {
-          console.warn('[WebSocketServer] connection url is empty')
+          logger.warn('[WebSocketServer] connection url is empty')
           socket.close()
           return
         }
@@ -46,22 +46,22 @@ export class WebSocketServer implements IServer {
         // FIXME: パース処理をちゃんとする
         const roomId = url.split('?')[0].split('/')[1]
         if (!util.isRoomId(roomId)) {
-          console.warn('[WebSocketServer] connection url roomId is invalid')
+          logger.warn('[WebSocketServer] connection url roomId is invalid')
           socket.close()
           return
         }
         // FIXME: パース処理をちゃんとする
         const userId = url.split('?')[1].split('=')[1]
         if (!util.isUserId(userId)) {
-          console.warn('[WebSocketServer] connection url userId is invalid')
+          logger.warn('[WebSocketServer] connection url userId is invalid')
           socket.close()
           return
         }
 
-        console.log(`[WebSocketServer] connection! userId: ${userId}, roomId: ${roomId}`)
+        logger.info(`[WebSocketServer] connection! userId: ${userId}, roomId: ${roomId}`)
 
         socket.on('message', (message) => {
-          console.log('[WebSocketServer] on message:', message.toString())
+          logger.info('[WebSocketServer] on message:', message.toString())
           const data = message.toString()
           websocketHandler(socket, roomId, userId, data)
         })

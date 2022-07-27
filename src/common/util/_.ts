@@ -1,3 +1,5 @@
+import * as moment from 'moment'
+
 /**
  * each
  *
@@ -15,4 +17,14 @@
 export function each<V, K extends string>(obj: { [_K in K]?: V }, callback: (v: V, k: K) => void): { [_K in K]?: V } {
   // @ts-expect-error TS-2769
   return lodash.each(obj, callback)
+}
+
+/**
+ * 日付のフォーマット
+ * @param date 日付
+ * @param format 日付のフォーマット (default: YYYY-MM-DD HH:mm:ss)
+ * @returns　フォーマットされた日付
+ */
+export function formatDate(date: Date, format: string = 'YYYY-MM-DD HH:mm:ss'): string {
+  return moment(date).format(format)
 }

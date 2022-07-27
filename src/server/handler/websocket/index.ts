@@ -1,6 +1,8 @@
 
 import {Chat, Schema} from '@common/types'
 
+import {logger} from '@common'
+
 import {WebSocketResponse} from '@server/response/impl'
 
 import {controller, roomMap} from '@server'
@@ -35,7 +37,7 @@ export const websocketHandler = async (
         return new Promise((resolve, reject) => {
           ws.send(message, (err) => {
             if (err) {
-              console.error(err)
+              logger.error(err)
             }
             return resolve()
           })
@@ -69,7 +71,7 @@ export const websocketHandler = async (
       )
       break
     default:
-      console.warn(`WebSocketServer commandName is invalid: ${commandName}`)
+      logger.warn(`[WebSocketServer] commandName is invalid: ${commandName}`)
       break
   }
 

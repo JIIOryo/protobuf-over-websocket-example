@@ -1,5 +1,6 @@
 import {IResponse} from '../interface'
 
+import {logger} from '@common'
 import {Chat, Schema} from '@common/types'
 import {_} from '@common/util'
 
@@ -22,7 +23,7 @@ export class WebSocketResponse<Res extends object = object> implements IResponse
     return new Promise((resolve, reject) => {
       this._socket.send(JSON.stringify(res), (err) => {
         if (err) {
-          console.error(err)
+          logger.error(err)
         }
         return resolve()
       })

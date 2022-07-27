@@ -2,15 +2,16 @@ import * as readline from 'readline'
 
 import { WebSocket } from 'ws'
 
+import {util} from '@common'
+import {COLOR} from '@common/util'
 import {config} from '@common/config'
 import {Chat, Schema} from '@common/types'
-import {util} from '@common'
 
 const generatePrompt = (userId: Chat.UserId, roomId?: Chat.RoomId): string => {
   if (roomId) {
-    return `${userId}@${roomId} > `
+    return `${COLOR.BLUE}${userId}@${roomId} >${COLOR.RESET} `
   } else {
-    return `${userId} > `
+    return `${COLOR.BLUE}${userId} >${COLOR.RESET} `
   }
 }
 
@@ -39,30 +40,56 @@ client.on('message', (message) => {
 
   switch (data.commandName) {
     case 'Room.Join': {
-      joinedRoomId = data.data.roomId
-      const success = data.data.success
+      const parsedData = data.data as Schema.Room.JoinRes
+
+      const joinUserId = parsedData.userId
+      const joinRoomId = parsedData.roomId
+      
+      // 自分以外の場合はスキップ
+      if (joinUserId !== userId) {
+        console.log(`\n${COLOR.YELLOW}${joinUserId}が${joinRoomId}に入室しました。${COLOR.RESET}`)
+        break
+      }
+
+      joinedRoomId = parsedData.roomId
+      const success = parsedData.success
       if (!success) {
         console.log('join failed')
         break
       }
-      console.log(`join success! roomId: ${joinedRoomId}`)
+      console.log(`${COLOR.YELLOW}${userId}${COLOR.RED}(You)${COLOR.YELLOW}が${joinRoomId}に入室しました。${COLOR.RESET}`)
       rl.setPrompt(generatePrompt(userId, joinedRoomId))
       break
     }
     case 'Room.Leave': {
-      const beforeRoomId = joinedRoomId
+      const parsedData = data.data as Schema.Room.LeaveRes
+      
+      const beforeRoomId = parsedData.roomId
+      const leaveUserId = parsedData.userId
+
+      // 退出者が自分以外の場合は終了
+      if (leaveUserId !== userId) {
+        console.log(`\n${COLOR.YELLOW}${leaveUserId}が${beforeRoomId}を退出しました。${COLOR.RESET}`)
+        break
+      }
+      
       joinedRoomId = undefined
       const success = data.data.success
+      
       if (!success) {
         console.log('leave failed')
         break
       }
-      console.log(`leave success! roomId: ${beforeRoomId}`)
+      console.log(`${COLOR.YELLOW}${userId}${COLOR.RED}(YOU)${COLOR.YELLOW}が${beforeRoomId}を退出しました。${COLOR.RESET}`)
       rl.setPrompt(generatePrompt(userId))
       break
     }
     case 'Room.Message': {
-      console.log(`\n${data.data.userId}: ${data.data.message}`)
+      const sendUserId = data.data.userId
+      if (userId === sendUserId) {
+        break
+      }
+      console.log(`\n${COLOR.GREEN}${sendUserId}${COLOR.RESET}: ${data.data.message}`)
       break
     }
     default: {
@@ -162,6 +189,8 @@ rl.on('line', (line) => {
       }
 
       client.send(JSON.stringify(request))
+
+      console.log(`${COLOR.GREEN}${userId}${COLOR.RED} (You)${COLOR.RESET}: ${line}`)
 
       return
     }
