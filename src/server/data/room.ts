@@ -25,6 +25,7 @@ export class Room {
    */
   public join(user: ChatUser): void {
     this.users[user.id] = user
+    user.setStatus(ChatUser.STATUS.ACTIVE)
   }
 
   /**

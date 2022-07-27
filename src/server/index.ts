@@ -8,6 +8,7 @@ import {RoomMap} from '@server/data'
 
 export const server = container.get<_server.Interface.IServer>(Identifier.IServer)
 export const controller = {
-  room: container.get<_controller.Interface.IRoomController>(Identifier.Controller.Room)
+  room: container.get<_controller.Interface.IRoomController>(Identifier.Controller.Room),
+  common: container.get<_controller.Interface.ICommonController>(Identifier.Controller.Common)
 }
 export const roomMap = new RoomMap()

@@ -39,6 +39,14 @@ client.on('message', (message) => {
   const data = JSON.parse(message.toString()) as Schema.Response
 
   switch (data.commandName) {
+    case 'Common.Ping': {
+      const parsedCommand = data.data as Schema.Common.PingRes
+      if (parsedCommand.success) {
+        break
+      }
+      console.log(`${COLOR.RED}ping failed${COLOR.RESET}`)
+      break
+    }
     case 'Room.Join': {
       const parsedData = data.data as Schema.Room.JoinRes
 
@@ -80,7 +88,7 @@ client.on('message', (message) => {
         console.log('leave failed')
         break
       }
-      console.log(`${COLOR.YELLOW}${userId}${COLOR.RED}(YOU)${COLOR.YELLOW}が${beforeRoomId}を退出しました。${COLOR.RESET}`)
+      console.log(`${COLOR.YELLOW}${userId}${COLOR.RED}(You)${COLOR.YELLOW}が${beforeRoomId}を退出しました。${COLOR.RESET}`)
       rl.setPrompt(generatePrompt(userId))
       break
     }
@@ -190,9 +198,20 @@ rl.on('line', (line) => {
 
       client.send(JSON.stringify(request))
 
-      console.log(`${COLOR.GREEN}${userId}${COLOR.RED} (You)${COLOR.RESET}: ${line}`)
+      console.log(`${COLOR.GREEN}${userId}${COLOR.RED}(You)${COLOR.RESET} : ${line}`)
 
       return
     }
   }
 })
+
+setInterval(() => {
+  if (!joinedRoomId) {
+    return
+  }
+  const request: Schema.Request<Schema.Common.PingReq> = {
+    commandName: 'Common.Ping',
+    data: {}
+  }
+  client.send(JSON.stringify(request))
+}, config.client.pingInterval)

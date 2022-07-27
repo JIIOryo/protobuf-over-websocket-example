@@ -17,6 +17,6 @@ export class ChatUserConnection {
   }
 
   async send(data: any): Promise<void> {
-    this._connection.send(data)
+    await this._connection.send(data)
   }
 }

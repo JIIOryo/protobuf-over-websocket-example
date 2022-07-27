@@ -9,7 +9,7 @@ class Logger {
    * @returns prefix
    */
   private generatePrefix(color: string, severity: string, date: Date = new Date()) {
-    return `${color}[${severity}] ${_.formatDate(date)}${COLOR.RESET} - `
+    return `${color}[${severity}] ${_.formatDate(date)}${COLOR.RESET} -`
   }
 
   /**

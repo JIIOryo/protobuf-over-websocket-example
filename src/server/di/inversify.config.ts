@@ -11,5 +11,6 @@ const rootContainer = new Container()
 rootContainer.bind<Config>(Identifier.Config).toConstantValue(config.config)
 rootContainer.bind<server.Interface.IServer>(Identifier.IServer).to(server.Impl.websocket.WebSocketServer)
 rootContainer.bind<controller.Interface.IRoomController>(Identifier.Controller.Room).to(controller.Impl.RoomController)
+rootContainer.bind<controller.Interface.ICommonController>(Identifier.Controller.Common).to(controller.Impl.CommonController)
 
 export const container = rootContainer

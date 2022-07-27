@@ -37,7 +37,7 @@ export const websocketHandler = async (
         return new Promise((resolve, reject) => {
           ws.send(message, (err) => {
             if (err) {
-              logger.error(err)
+              logger.warn(err)
             }
             return resolve()
           })
@@ -48,7 +48,16 @@ export const websocketHandler = async (
     chatUser = new ChatUser(userId, connection)
   }
 
+  chatUser.updateLastActiveTime()
+
   switch (commandName) {
+    case 'Common.Ping':
+      await controller.common.ping(
+        data,
+        chatUser,
+        new WebSocketResponse<Schema.Common.PingRes>(ws, room)
+      )
+      break
     case 'Room.Join':
       await controller.room.join(
         data as Schema.Room.JoinReq,
