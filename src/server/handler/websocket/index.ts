@@ -1,26 +1,44 @@
 
-import {Chat, Schema} from '@common/types'
+import {Chat, Schema, TransportSchema} from '@common/types'
 
-import {logger} from '@common'
+import {logger, protocol, command} from '@common'
+
+// FIXME
+import {JsonSerializer, ProtobufSerializer} from '@common/serializer/impl'
 
 import {WebSocketResponse} from '@server/response/impl'
 
 import {controller, roomMap} from '@server'
 import {Room, ChatUser, ChatUserConnection, IConnection} from '@server/data'
 
+// const serializer = new JsonSerializer<TransportSchema.All>()
+const serializer = new ProtobufSerializer<TransportSchema.NameSchemaMap>([
+  __dirname + '../../../../../proto/common.proto',
+  __dirname + '../../../../../proto/room.proto',
+])
+
 export const websocketHandler = async (
   ws: Chat.WebSocket.Socket,
   roomId: Chat.RoomId,
   userId: Chat.UserId,
-  message: string,
+  message: Buffer,
 ): Promise<void> => {
 
-  const parsedMessage: Schema.Request = JSON.parse(message)
+  // const parsedMessage: Schema.Request = JSON.parse(message)
+  const _header = message.slice(0, 4)
+  const _body = message.slice(4)
+  const header = protocol.gupio.v1.parseRequestHeader(_header)
+  const commandId = header.commandId
+  if (!command.isCmdId(commandId)) {
+    logger.error(`invalid commandId: ${commandId}`)
+    return
+  }
   /**
-   * @example 'Room.Join'
+   * @example 'room.JoinReq'
    */
-  const commandName = parsedMessage.commandName
-  const data = parsedMessage.data
+  const commandName = command.idCmdMap[commandId]
+
+  const data = serializer.deserialize(commandName, _body)
 
   // roomを取得する。存在しない場合は作成する
   let room = roomMap.get(roomId)
@@ -51,28 +69,28 @@ export const websocketHandler = async (
   chatUser.updateLastActiveTime()
 
   switch (commandName) {
-    case 'Common.Ping':
+    case 'common.PingReq':
       await controller.common.ping(
         data,
         chatUser,
         new WebSocketResponse<Schema.Common.PingRes>(ws, room)
       )
       break
-    case 'Room.Join':
+    case 'room.JoinReq':
       await controller.room.join(
         data as Schema.Room.JoinReq,
         chatUser,
         new WebSocketResponse<Schema.Room.JoinRes>(ws, room),
       )
       break
-    case 'Room.Leave':
+    case 'room.LeaveReq':
       await controller.room.leave(
         data as Schema.Room.LeaveReq,
         chatUser,
         new WebSocketResponse<Schema.Room.LeaveRes>(ws, room),
       )
       break
-    case 'Room.Message':
+    case 'room.MessageReq':
       await controller.room.message(
         data as Schema.Room.MessageReq,
         chatUser,

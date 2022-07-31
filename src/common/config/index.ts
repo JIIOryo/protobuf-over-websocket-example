@@ -2,7 +2,7 @@ import {Config} from '@common/types'
 
 export const config: Config = {
   server: {
-    port: 3000,
+    port: 8080,
     chatUser: {
       timeout: 20 * 1000
     }

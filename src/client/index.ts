@@ -2,10 +2,18 @@ import * as readline from 'readline'
 
 import { WebSocket } from 'ws'
 
-import {util} from '@common'
-import {COLOR} from '@common/util'
+import {util, command} from '@common'
+import {COLOR, isRoomId} from '@common/util'
 import {config} from '@common/config'
-import {Chat, Schema} from '@common/types'
+import {Chat, Schema, TransportSchema} from '@common/types'
+import * as protocol from '@common/protocol'
+import { JsonSerializer, ProtobufSerializer } from '@common/serializer/impl'
+
+// const serializer = new JsonSerializer<TransportSchema.All>()
+const serializer = new ProtobufSerializer<TransportSchema.NameSchemaMap>([
+  __dirname + '/../../proto/common.proto',
+  __dirname + '/../../proto/room.proto',
+])
 
 const generatePrompt = (userId: Chat.UserId, roomId?: Chat.RoomId): string => {
   if (roomId) {
@@ -35,20 +43,32 @@ client.on('open', ()=> {
   rl.prompt()
 })
 
-client.on('message', (message) => {
-  const data = JSON.parse(message.toString()) as Schema.Response
+client.on('message', (message: Buffer) => {
+  // const data = JSON.parse(message.toString()) as Schema.Response
 
-  switch (data.commandName) {
-    case 'Common.Ping': {
-      const parsedCommand = data.data as Schema.Common.PingRes
+  const _header = message.slice(0, 3)
+  const _body = message.slice(3)
+  const header = protocol.gupio.v1.parseResponseHeader(_header)
+  const commandId = header.commandId
+
+  if (!command.isCmdId(commandId)) {
+    console.error('unknown cmdId')
+    return
+  }
+  const commandName = command.idCmdMap[commandId]
+  const data = serializer.deserialize(commandName, _body)
+
+  switch (commandName) {
+    case command.command.common.ping.res.name: {
+      const parsedCommand = data as TransportSchema.NameSchemaMap[typeof commandName]
       if (parsedCommand.success) {
         break
       }
       console.log(`${COLOR.RED}ping failed${COLOR.RESET}`)
       break
     }
-    case 'Room.Join': {
-      const parsedData = data.data as Schema.Room.JoinRes
+    case command.command.room.join.res.name: {
+      const parsedData = data as TransportSchema.NameSchemaMap[typeof commandName]
 
       const joinUserId = parsedData.userId
       const joinRoomId = parsedData.roomId
@@ -57,6 +77,11 @@ client.on('message', (message) => {
       if (joinUserId !== userId) {
         console.log(`\n${COLOR.YELLOW}${joinUserId}が${joinRoomId}に入室しました。${COLOR.RESET}`)
         break
+      }
+
+      if (!isRoomId(parsedData.roomId)) {
+        console.error('invalid roomId')
+        return
       }
 
       joinedRoomId = parsedData.roomId
@@ -69,8 +94,8 @@ client.on('message', (message) => {
       rl.setPrompt(generatePrompt(userId, joinedRoomId))
       break
     }
-    case 'Room.Leave': {
-      const parsedData = data.data as Schema.Room.LeaveRes
+    case command.command.room.leave.res.name: {
+      const parsedData = data as TransportSchema.NameSchemaMap[typeof commandName]
       
       const beforeRoomId = parsedData.roomId
       const leaveUserId = parsedData.userId
@@ -82,7 +107,7 @@ client.on('message', (message) => {
       }
       
       joinedRoomId = undefined
-      const success = data.data.success
+      const success = parsedData.success
       
       if (!success) {
         console.log('leave failed')
@@ -92,16 +117,17 @@ client.on('message', (message) => {
       rl.setPrompt(generatePrompt(userId))
       break
     }
-    case 'Room.Message': {
-      const sendUserId = data.data.userId
+    case command.command.room.message.res.name: {
+      const parsedData = data as TransportSchema.NameSchemaMap[typeof commandName]
+      const sendUserId = parsedData.userId
       if (userId === sendUserId) {
         break
       }
-      console.log(`\n${COLOR.GREEN}${sendUserId}${COLOR.RESET}: ${data.data.message}`)
+      console.log(`\n${COLOR.GREEN}${sendUserId}${COLOR.RESET}: ${parsedData.message}`)
       break
     }
     default: {
-      console.warn(`unknown command from server ${data.commandName}`)
+      console.warn(`unknown command from server commandId: ${commandId}`)
       break
     }
   }
@@ -142,14 +168,15 @@ rl.on('line', (line) => {
         return
       }
 
-      const request: Schema.Request<Schema.Room.JoinReq> = {
-        commandName: 'Room.Join',
-        data: {
-          userId,
-          roomId: parsedRoomId,
-        }
-      }
-      client.send(JSON.stringify(request))
+      const data: Schema.Room.JoinReq = {userId, roomId: parsedRoomId}
+      const serializedData = serializer.serialize(command.command.room.join.req.name, data)
+      const headerBuffer = protocol.gupio.v1.buildRequestHeader({
+        commandId: command.command.room.join.req.id,
+        encoding: 1,
+        protocolVersion: 0,
+      })
+      client.send(Buffer.concat([headerBuffer, serializedData]))
+
       return
     }
     case 'leave': {
@@ -166,15 +193,15 @@ rl.on('line', (line) => {
         return
       }
 
-      const request: Schema.Request<Schema.Room.LeaveReq> = {
-        commandName: 'Room.Leave',
-        data: {
-          userId,
-          roomId: parsedRoomId,
-        }
-      }
+      const data: Schema.Room.LeaveReq = {userId, roomId: parsedRoomId}
+      const serializedData = serializer.serialize(command.command.room.leave.req.name, data)
+      const headerBuffer = protocol.gupio.v1.buildRequestHeader({
+        commandId: command.command.room.leave.req.id,
+        encoding: 1,
+        protocolVersion: 0,
+      })
+      client.send(Buffer.concat([headerBuffer, serializedData]))
 
-      client.send(JSON.stringify(request))
       return
     }
     default: {
@@ -187,16 +214,14 @@ rl.on('line', (line) => {
       }
 
       // messageを送信
-      const request: Schema.Request<Schema.Room.MessageReq> = {
-        commandName: 'Room.Message',
-        data: {
-          userId,
-          roomId: joinedRoomId,
-          message: line,
-        }
-      }
-
-      client.send(JSON.stringify(request))
+      const data: Schema.Room.MessageReq = {userId, roomId: joinedRoomId, message: line}
+      const serializedData = serializer.serialize(command.command.room.message.req.name, data)
+      const headerBuffer = protocol.gupio.v1.buildRequestHeader({
+        commandId: command.command.room.message.req.id,
+        encoding: 1,
+        protocolVersion: 0,
+      })
+      client.send(Buffer.concat([headerBuffer, serializedData]))
 
       console.log(`${COLOR.GREEN}${userId}${COLOR.RED}(You)${COLOR.RESET} : ${line}`)
 
@@ -209,9 +234,14 @@ setInterval(() => {
   if (!joinedRoomId) {
     return
   }
-  const request: Schema.Request<Schema.Common.PingReq> = {
-    commandName: 'Common.Ping',
-    data: {}
-  }
-  client.send(JSON.stringify(request))
+
+  const data: Schema.Common.PingReq = {}
+  const serializedData = serializer.serialize(command.command.common.ping.req.name, data)
+  const headerBuffer = protocol.gupio.v1.buildRequestHeader({
+    commandId: command.command.common.ping.req.id,
+    encoding: 1,
+    protocolVersion: 0,
+  })
+  client.send(Buffer.concat([headerBuffer, serializedData]))
+
 }, config.client.pingInterval)

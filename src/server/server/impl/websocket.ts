@@ -60,10 +60,9 @@ export class WebSocketServer implements IServer {
 
         logger.info(`[WebSocketServer] connection! userId: ${userId}, roomId: ${roomId}`)
 
-        socket.on('message', (message) => {
+        socket.on('message', (message: Buffer) => {
           logger.info('[WebSocketServer] on message:', message.toString())
-          const data = message.toString()
-          websocketHandler(socket, roomId, userId, data)
+          websocketHandler(socket, roomId, userId, message)
         })
       })
       resolve()

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package room;
+
+message JoinReq {
+  string room_id = 1;
+  string user_id = 2;
+}
+message JoinRes {
+  string room_id = 1;
+  string user_id = 2;
+  bool success = 3;
+}
+
+message LeaveReq {
+  string room_id = 1;
+  string user_id = 2;
+}
+message LeaveRes {
+  string room_id = 1;
+  string user_id = 2;
+  bool success = 3;
+}
+
+message MessageReq {
+  string room_id = 1;
+  string user_id = 2;
+  string message = 3;
+}
+message MessageRes {
+  string room_id = 1;
+  string user_id = 2;
+  string message = 3;
+}

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package common;
+
+service CommonService {
+  rpc Ping(PingReq) returns (PingRes) {}
+}
+
+message PingReq {
+}
+message PingRes {
+  bool success = 1;
+}
